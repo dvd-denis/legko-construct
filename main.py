@@ -6,12 +6,15 @@ import toml
 import base64
 
 def checkExist(api_url):
-    with open('status.txt', 'r') as stats_file:
+    try:
+        with open('status.txt', 'r') as stats_file:
         a: int = int(stats_file.readline())
         req = requests.get("http://" + api_url + "/article/delete/" + str(a))
         if req.status_code == 200:
             print("Updated!!")
-
+    except Exception as e:
+        raise
+        
 class MyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, (bytes, bytearray)):

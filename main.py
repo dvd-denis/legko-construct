@@ -5,9 +5,9 @@ import requests
 import toml
 import base64
 
-def checkExist(api_url):
+def checkExist(api_url, article_folder):
     try:
-        with open('status.txt', 'r') as stats_file:
+        with open(article_folder + '/status.txt', 'r') as stats_file:
             a: int = int(stats_file.readline())
             req = requests.get("http://" + api_url + "/article/delete/" + str(a))
             if req.status_code == 200:
@@ -16,44 +16,46 @@ def checkExist(api_url):
         pass
 
 if __name__ == "__main__":
-    config = toml.load("settings/config.toml")
-    api_url = config["ip"] + ":" + config["port"]
+    global_config = toml.load("config.toml")
+    api_url = global_config["ip"] + ":" + global_config["port"]   
 
-    checkExist(api_url)
-    
-    with open("icon/" + config['article']['icon_name'], "rb") as image_file:
-        icon = base64.b64encode(image_file.read()).decode("UTF8")
+    for article_folder in [d for d in os.listdir('.') if os.path.isdir(d) and not d.startswith(".")]:
+        article = toml.load(article_folder + "/settings/config.toml")
 
-    article = config["article"]
-    article["icon"] = icon
+        checkExist(api_url, article_folder)
+        
+        with open(article_folder + "/icon/" + article['icon_name'], "rb") as image_file:
+            icon = base64.b64encode(image_file.read()).decode("UTF8")
 
-    response = requests.post("http://" + api_url + "/article", data=json.dumps(article))
-    article_id = response.json()
+        article["icon"] = icon
 
-    for dir in os.listdir('steps'):
-        step = toml.load("steps/" + dir + "/config.toml")
-        with open("steps/" + dir + "/content.html", "r") as step_content_file:
-            step["content"] = step_content_file.read()
-        step["article_id"] = article_id
-        step["num"] = int(dir)
+        response = requests.post("http://" + api_url + "/article", data=json.dumps(article))
+        article_id = response.json()
 
-        response = requests.post("http://" + api_url + "/step", data=json.dumps(step))
-        step_id = response.json()
-        if (not step["question"]):
-            imgs = []
+        for dir in os.listdir(article_folder + '/steps'):
+            step = toml.load(article_folder + "/steps/" + dir + "/config.toml")
+            with open(article_folder + "/steps/" + dir + "/content.html", "r") as step_content_file:
+                step["content"] = step_content_file.read()
+            step["article_id"] = article_id
+            step["num"] = int(dir)
 
-            for image in os.listdir('steps/' + dir + "/images"):
-                with open('steps/' + dir + "/images/" + image, "rb") as image_file:
-                    img = {}
-                    img["step_id"] = step_id
-                    img["image"] = base64.b64encode(image_file.read()).decode("UTF8")
-                    img["image_name"] = image
-                    imgs.append(img)
-            
-            response = requests.post("http://" + api_url + "/images", data=json.dumps(imgs))
+            response = requests.post("http://" + api_url + "/step", data=json.dumps(step))
+            step_id = response.json()
+            if (not step["question"]):
+                imgs = []
 
-    if (response.status_code == 200):
-        with open('status.txt', 'w') as stats_file:
-            stats_file.write(str(article_id))
+                for image in os.listdir(article_folder + '/steps/' + dir + "/images"):
+                    with open(article_folder + '/steps/' + dir + "/images/" + image, "rb") as image_file:
+                        img = {}
+                        img["step_id"] = step_id
+                        img["image"] = base64.b64encode(image_file.read()).decode("UTF8")
+                        img["image_name"] = image
+                        imgs.append(img)
+                
+                response = requests.post("http://" + api_url + "/images", data=json.dumps(imgs))
 
-    print("Complete!")
+        if (response.status_code == 200):
+            with open(article_folder + '/status.txt', 'w') as stats_file:
+                stats_file.write(str(article_id))
+
+        print(article_folder + ": Complete!")

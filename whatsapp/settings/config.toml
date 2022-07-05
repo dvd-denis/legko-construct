@@ -1,7 +1,3 @@
-ip = "localhost"
-port = "8080"
-
-[article]
 title = "Whatsapp"
 icon_name = "whatsapp.png"
 url = "/whatsapp"

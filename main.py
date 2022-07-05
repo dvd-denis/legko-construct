@@ -11,7 +11,7 @@ def checkExist(api_url, article_folder):
             a: int = int(stats_file.readline())
             req = requests.get("http://" + api_url + "/article/delete/" + str(a))
             if req.status_code == 200:
-                print("Updated!")
+                print(article_folder + ": Updated!")
     except Exception as e:
         pass
 

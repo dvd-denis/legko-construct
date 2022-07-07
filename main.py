@@ -5,7 +5,7 @@ from time import process_time_ns
 import requests
 import toml
 import base64
-from dotenv import dotenv_values, load_dotenv 
+from dotenv import dotenv_values, load_dotenv
 
 def checkExist(api_url, article_folder, headers):
     try:
@@ -28,16 +28,13 @@ if __name__ == "__main__":
     }
 
     global_config = toml.load("config.toml")
-    api_url = global_config["ip"]   
+    api_url = global_config["ip"]
     (_, article_folders, _) = os.walk("src").__next__()
     for article_folder in article_folders:
-        print(article_folders)
-        print(article_folder)
-
         article = toml.load("src/" + article_folder + "/settings/config.toml")
 
         checkExist(api_url, article_folder, headers)
-        
+
         with open("src/" + article_folder + "/icon/" + article['icon_name'], "rb") as image_file:
             icon = base64.b64encode(image_file.read()).decode("UTF8")
 

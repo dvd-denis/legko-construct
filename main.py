@@ -41,17 +41,16 @@ if __name__ == "__main__":
 
             response = requests.post("http://" + api_url + "/step", data=json.dumps(step))
             step_id = response.json()
-            if (not step["question"]):
-                imgs = []
+            imgs = []
 
-                for image in os.listdir(article_folder + '/steps/' + dir + "/images"):
-                    with open(article_folder + '/steps/' + dir + "/images/" + image, "rb") as image_file:
-                        img = {}
-                        img["step_id"] = step_id
-                        img["image"] = base64.b64encode(image_file.read()).decode("UTF8")
-                        img["image_name"] = image
-                        imgs.append(img)
-                
+            for image in os.listdir(article_folder + '/steps/' + dir + "/images"):
+                with open(article_folder + '/steps/' + dir + "/images/" + image, "rb") as image_file:
+                    img = {}
+                    img["step_id"] = step_id
+                    img["image"] = base64.b64encode(image_file.read()).decode("UTF8")
+                    img["image_name"] = image
+                    imgs.append(img)
+            if len(imgs) != 0:
                 response = requests.post("http://" + api_url + "/images", data=json.dumps(imgs))
 
         if (response.status_code == 200):

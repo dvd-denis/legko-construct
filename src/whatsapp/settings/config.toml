@@ -4,3 +4,4 @@ url = "/whatsapp"
 color = "#334124"
 question = false
 wifi = false
+model="default"

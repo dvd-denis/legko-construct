@@ -1,5 +1,5 @@
 title = "Настройки"
 icon_name = "settings.png"
-color = "#124F"
+color = "#7a85e5"
 wifi = false
 model="default"

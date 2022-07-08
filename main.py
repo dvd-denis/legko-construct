@@ -1,19 +1,17 @@
-from cgitb import text
 import json
 import os
-from time import process_time_ns
 import requests
 import toml
 import base64
 from dotenv import dotenv_values, load_dotenv
 
-def checkExist(api_url, article_folder, headers):
+def checkExist(api_url, group_folder, headers):
     try:
-        with open("src/" + article_folder + '/status.txt', 'r') as stats_file:
+        with open("src/" + group_folder + '/status.txt', 'r') as stats_file:
             a: int = int(stats_file.readline())
-            req = requests.post("https://" + api_url + "/article/delete/" + str(a), headers=headers)
+            req = requests.post("https://" + api_url + "/group/delete/" + str(a), headers=headers)
             if req.status_code == 200:
-                print(article_folder + ": Updated!")
+                print(group_folder + ": Updated!")
     except Exception as e:
         pass
 
@@ -29,43 +27,53 @@ if __name__ == "__main__":
 
     global_config = toml.load("config.toml")
     api_url = global_config["ip"]
-    (_, article_folders, _) = os.walk("src").__next__()
-    for article_folder in article_folders:
-        article = toml.load("src/" + article_folder + "/settings/config.toml")
+    (_, group_folders, _) = os.walk("src").__next__()
+    for group_folder in group_folders:
+        group = toml.load("src/" + group_folder + "/group.toml")
 
-        checkExist(api_url, article_folder, headers)
+        checkExist(api_url, group_folder, headers)
 
-        with open("src/" + article_folder + "/icon/" + article['icon_name'], "rb") as image_file:
+        with open("src/" + group_folder + "/" + group['icon_name'], "rb") as image_file:
             icon = base64.b64encode(image_file.read()).decode("UTF8")
 
-        article["icon"] = icon
+        group["icon"] = icon
 
-        response = requests.post("https://" + api_url + "/article", data=json.dumps(article), headers=headers)
-        article_id = response.json()
+        response = requests.post("https://" + api_url + "/group", data=json.dumps(group), headers=headers)
+        group_id = response.json()
 
-        for dir in os.listdir("src/" + article_folder + '/steps'):
-            step = toml.load("src/" + article_folder + "/steps/" + dir + "/config.toml")
-            with open("src/" + article_folder + "/steps/" + dir + "/content.html", "r") as step_content_file:
-                step["content"] = step_content_file.read()
-            step["article_id"] = article_id
-            step["num"] = int(dir)
+        for article_folder in os.listdir("src/" + group_folder + '/articles'):
+            article = toml.load("src/" + group_folder + "/articles/" + article_folder + "/article.toml")
+            article["group_id"] = group_id
+            
+            response = requests.post("https://" + api_url + "/article/", data=json.dumps(article), headers=headers)
+            article_id = response.json()
+            
+            num = 0
+            for step_folder in os.listdir("src/" + group_folder + '/articles/' + article_folder + '/steps'):
 
-            response = requests.post("https://" + api_url + "/step", data=json.dumps(step), headers=headers)
-            step_id = response.json()
-            imgs = []
+                step = toml.load("src/" + group_folder + '/articles/' + article_folder + '/steps/' + step_folder + "/step.toml")
+                with open("src/" + group_folder + '/articles/' + article_folder + '/steps/' + step_folder + "/content.html", "r") as step_content_file:
+                    step["content"] = step_content_file.read()
+                step["article_id"] = article_id
+                step["num"] = num
+                num+=1
 
-            for image in os.listdir("src/" + article_folder + '/steps/' + dir + "/images"):
-                with open("src/" + article_folder + '/steps/' + dir + "/images/" + image, "rb") as image_file:
-                    img = {}
-                    img["step_id"] = step_id
-                    img["image"] = base64.b64encode(image_file.read()).decode("UTF8")
-                    img["image_name"] = image
-                    imgs.append(img)
-            if len(imgs) != 0:
-                response = requests.post("https://" + api_url + "/images", data=json.dumps(imgs), headers=headers)
+                response = requests.post("https://" + api_url + "/step", data=json.dumps(step), headers=headers)
+                step_id = response.json()
+                imgs = []
+
+                for image in os.listdir("src/" + group_folder + '/articles/' + article_folder + '/steps/' + step_folder + "/images"):
+                    with open("src/" + group_folder + '/articles/' + article_folder + '/steps/' + step_folder + "/images/" + image, "rb") as image_file:
+                        img = {}
+                        img["step_id"] = step_id
+                        img["image"] = base64.b64encode(image_file.read()).decode("UTF8")
+                        img["image_name"] = image
+                        imgs.append(img)
+                if len(imgs) != 0:
+                    response = requests.post("https://" + api_url + "/images", data=json.dumps(imgs), headers=headers)
 
         if (response.status_code == 200):
-            with open("src/" + article_folder + '/status.txt', 'w') as stats_file:
-                stats_file.write(str(article_id))
+            with open("src/" + group_folder + '/status.txt', 'w') as stats_file:
+                stats_file.write(str(group_id))
 
-        print(article_folder + ": Complete!")
+        print(group_folder + ": Complete!")

@@ -1,7 +1,0 @@
-title = "Whatsapp"
-icon_name = "whatsapp.png"
-url = "/whatsapp"
-color = "#334124"
-question = false
-wifi = false
-model="default"
